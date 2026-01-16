@@ -1,0 +1,102 @@
+@page "/orders/edit/{OrderId:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Администратор")]
+@inject IOrderService OrderService
+@inject IProductService ProductService
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Редактировать заказ</h3>
+
+            @if (isLoading)
+            {
+                <p>Загрузка...</p>
+            }
+            else if (order == null)
+            {
+                <p>Заказ не найден.</p>
+                <a class="btn btn-secondary" href="/orders">Назад к списку</a>
+            }
+            else
+            {
+                <EditForm Model="order" OnValidSubmit="SaveOrder">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="form-group mb-3">
+                        <label for="codeOrder" class="form-label">Код заказа:</label>
+                        <InputNumber id="codeOrder" class="form-control" @bind-Value="order.CodeOrder" disabled="true" />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="codeProduct" class="form-label">Товар:</label>
+                        <InputSelect id="codeProduct" class="form-select" @bind-Value="order.CodeProduct">
+                            <option value="0">-- Выберите товар --</option>
+                            @foreach (var product in products)
+                            {
+                                <option value="@product.CodeProduct">@product.NameProduct (Цена: @product.Price.ToString("C"))</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => order.CodeProduct)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="quantity" class="form-label">Количество:</label>
+                        <InputNumber id="quantity" class="form-control" @bind-Value="order.Quantity" />
+                        <ValidationMessage For="@(() => order.Quantity)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="dateOrder" class="form-label">Дата заказа:</label>
+                        <InputDate id="dateOrder" class="form-control" @bind-Value="order.OrderDate" />
+                        <ValidationMessage For="@(() => order.OrderDate)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="totalCost" class="form-label">Общая стоимость:</label>
+                        <InputNumber id="totalCost" class="form-control" @bind-Value="order.TotalCost" readonly />
+                        <small class="text-muted">Рассчитывается автоматически при сохранении</small>
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success me-2">Сохранить</button>
+                        <a class="btn btn-secondary" href="/orders">Отмена</a>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int OrderId { get; set; }
+
+    private Order? order;
+    private IEnumerable<Product> products = new List<Product>();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        order = await OrderService.GetWithProductByIdAsync(OrderId);
+        products = await ProductService.GetWithCategoryAsync();
+        isLoading = false;
+    }
+
+    private async Task SaveOrder()
+    {
+        if (order != null)
+        {
+            // Пересчитываем общую стоимость
+            var product = products.FirstOrDefault(p => p.CodeProduct == order.CodeProduct);
+            if (product != null)
+            {
+                order.TotalCost = product.Price * order.Quantity;
+            }
+            
+            await OrderService.UpdateAsync(order);
+            Navigation.NavigateTo("/orders");
+        }
+    }
+}

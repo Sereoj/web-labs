@@ -1,0 +1,155 @@
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# CoreCLR native binaries
+modules/
+
+# VS Code
+.vscode/
+
+# Visual Studio 2015/2017/2019
+**/Debug/
+**/Release/
+*.sln.db
+*.user
+*.userosscache
+*.suo
+*.csproj.user
+*.vbproj.user
+*.userprefs
+*.cache
+*.VC.db
+*.VC.VC.opendb
+*.VC.VC.opendb-shm
+*.VC.VC.opendb-wal
+
+# Visual Studio 2019
+**/[Dd]ebug*/
+**/[Rr]elease*/
+**/[Xx]64/
+**/[Xx]86/
+**/Logs/
+*.VC.VC.opendb-shm
+*.VC.VC.opendb-wal
+**/ipch/
+**/.vs/
+**/.idea/
+*.VC.db
+*.VC.VC.opendb
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+*.DotSettings
+*.[Rr]e[Gg]ion
+
+# NuGet
+*.nupkg
+[Nn]u[Pp]ackages/
+[Nn]uget.exe
+[Nn]u[Pp]ackages.RepoGen.[Cc]onfig
+[Nn]u[Pp]ackages.[Cc]onfig
+[Nn]u[Pp]ackages.[Tt]argets
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+[Tt]humbs.db
+desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# User-specific configurations
+.vsconfig
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.Development.json
+*.local.settings.json
+
+# IDE
+*.swp
+*.swo
+*~
+*.tmp
+
+# Log files
+*.log
+logs/
+
+# Environment specific files
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+
+# Browser-sync
+.browser-sync-client/
+.browser-sync-server/
+
+# Temporary files
+*.tmp
+*.temp
+Temp/
+temp/
+
+# Package manager caches
+node_modules/
+jspm_packages/
+bower_components/
+.npm/
+.yarn/
+.pnpm-store/
+.nuxt/
+.next/
+dist/
+build/
+
+# IDE specific
+.idea/
+*.iml
+*.iws
+*.db
+*.orig
+*.rej
+*.orig.*
+*.rej.*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.com.apple.timemachine.supported
+.ApertureTrashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+[Ee]xpress/

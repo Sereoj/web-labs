@@ -1,0 +1,51 @@
+﻿<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Каталог товаров</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Меню навигации" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Главная
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="categories">
+                <span class="bi bi-folder-fill-nav-menu" aria-hidden="true"></span> Категории
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="products">
+                <span class="bi bi-box-fill-nav-menu" aria-hidden="true"></span> Товары
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="orders">
+                <span class="bi bi-cart-fill-nav-menu" aria-hidden="true"></span> Заказы
+            </NavLink>
+        </div>
+
+        <AuthorizeView Roles="Администратор">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="import-export">
+                        <span class="bi bi-cloud-arrow-down-up" aria-hidden="true"></span> Импорт/Экспорт
+                    </NavLink>
+                </div>
+
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="admin/users">
+                        <span class="bi bi-people" aria-hidden="true"></span> Пользователи
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+    </nav>
+</div>

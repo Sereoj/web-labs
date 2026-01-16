@@ -1,0 +1,161 @@
+@page "/employees"
+@page "/employees/{Id:int}"
+@rendermode InteractiveServer
+@using EmployeeManagementApp.Models
+@using EmployeeManagementApp.Services
+@inject IEmployeeService EmployeeService
+@inject NavigationManager Navigation
+
+<h3>@(Employee?.Id > 0 ? "Редактировать сотрудника" : "Добавить сотрудника")</h3>
+
+<div class="form-container">
+    <EditForm Model="Employee" OnValidSubmit="SaveEmployee">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label for="name">Имя:</label>
+            <InputText id="name" class="form-control" @bind-Value="Employee.Name" />
+            <ValidationMessage For="@(() => Employee.Name)" />
+        </div>
+
+        <div class="form-group">
+            <label for="email">Email:</label>
+            <InputText id="email" class="form-control" @bind-Value="Employee.Email" />
+            <ValidationMessage For="@(() => Employee.Email)" />
+        </div>
+
+        <div class="form-group">
+            <label for="position">Должность:</label>
+            <select id="position" class="form-control" @bind="Employee.CurrentPosition">
+                @foreach (var position in Enum.GetValues<Position>())
+                {
+                    <option value="@position">@GetPositionName(position)</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <InputCheckbox @bind-Value="Employee.IsActive" /> Активен
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Сохранить</button>
+            <button type="button" class="btn btn-secondary" @onclick="Cancel">Отмена</button>
+        </div>
+    </EditForm>
+</div>
+
+<style>
+    .form-container {
+        max-width: 500px;
+        margin: 20px auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        background-color: #f9f9f9;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    .form-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn:hover {
+        opacity: 0.8;
+    }
+</style>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private Employee Employee = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (Id.HasValue && Id.Value > 0)
+        {
+            var employee = await EmployeeService.GetEmployeeByIdAsync(Id.Value);
+            if (employee != null)
+            {
+                Employee = employee;
+            }
+            else
+            {
+                // Redirect to not found page if employee doesn't exist
+                Navigation.NavigateTo("/notfound");
+            }
+        }
+    }
+
+    private async Task SaveEmployee()
+    {
+        if (Employee.Id > 0)
+        {
+            await EmployeeService.UpdateEmployeeAsync(Employee);
+        }
+        else
+        {
+            await EmployeeService.CreateEmployeeAsync(Employee);
+        }
+
+        Navigation.NavigateTo("/employeemanagement");
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/employeemanagement");
+    }
+
+    private string GetPositionName(Position position)
+    {
+        return position switch
+        {
+            Position.None => "Не назначен",
+            Position.Programmer => "Программист",
+            Position.Analyst => "Аналитик",
+            Position.Designer => "Дизайнер",
+            _ => "Не указан"
+        };
+    }
+}

@@ -1,0 +1,52 @@
+@using Microsoft.AspNetCore.Identity
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+
+<AuthorizeView>
+    <Authorized>
+        <div class="dropdown">
+            <a class="nav-link dropdown-toggle text-white" href="#" role="button" data-bs-toggle="dropdown">
+                @userFullName
+                @if (isAdmin)
+                {
+                    <span class="badge bg-danger ms-1">Админ</span>
+                }
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="/account/profile">Профиль</a></li>
+                @if (isAdmin)
+                {
+                    <li><a class="dropdown-item" href="/admin/users">Управление пользователями</a></li>
+                }
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/account/logout">Выйти</a></li>
+            </ul>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        <a href="/account/login" class="btn btn-outline-light btn-sm me-2">Войти</a>
+        <a href="/account/register" class="btn btn-light btn-sm">Регистрация</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private string userFullName = "Пользователь";
+    private bool isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            var appUser = await UserManager.GetUserAsync(user);
+            if (appUser != null)
+            {
+                userFullName = appUser.FullName;
+            }
+            
+            isAdmin = user.IsInRole(IdentityDataInitializer.Roles.Administrator);
+        }
+    }
+}

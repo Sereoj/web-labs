@@ -1,0 +1,210 @@
+@page "/import-export"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Администратор")]
+@using ProductCatalogApp.Data
+@inject IExcelImportService ImportService
+@inject IExcelExportService ExportService
+@inject ApplicationDbContext Context
+@inject IJSRuntime JSRuntime
+
+<div class="container mt-4">
+    <h3>Импорт и экспорт данных</h3>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Импорт из Excel</h5>
+        </div>
+        <div class="card-body">
+            <p class="text-muted">Файл должен содержать листы с названиями: Categories, Products, Orders</p>
+            <div class="mb-3">
+                <label for="importFile" class="form-label">Выберите Excel файл для импорта:</label>
+                <InputFile id="importFile" OnChange="@OnImportFileSelected" class="form-control" accept=".xlsx" />
+            </div>
+            @if (isImporting)
+            {
+                <div class="alert alert-warning">Импорт выполняется...</div>
+            }
+            @if (!string.IsNullOrEmpty(importMessage))
+            {
+                <div class="alert alert-success">@importMessage</div>
+            }
+            @if (importError != null)
+            {
+                <div class="alert alert-danger">Ошибка: @importError.Message</div>
+            }
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Экспорт в Excel</h5>
+        </div>
+        <div class="card-body">
+            <button class="btn btn-primary" @onclick="OnExportClick" disabled="@isExporting">
+                @if (isExporting)
+                {
+                    <span>Экспорт...</span>
+                }
+                else
+                {
+                    <span>Экспортировать все данные в Excel</span>
+                }
+            </button>
+            @if (!string.IsNullOrEmpty(exportMessage))
+            {
+                <div class="alert alert-success mt-2">@exportMessage</div>
+            }
+            @if (exportError != null)
+            {
+                <div class="alert alert-danger mt-2">Ошибка: @exportError.Message</div>
+            }
+            @if (exportedData != null && !string.IsNullOrEmpty(fileName))
+            {
+                <div class="mt-2">
+                    <button class="btn btn-success" @onclick="DownloadFile">Скачать файл: @fileName</button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Текущие данные в базе</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h4>@categoriesCount</h4>
+                            <p class="mb-0">Категории</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h4>@productsCount</h4>
+                            <p class="mb-0">Товары</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h4>@ordersCount</h4>
+                            <p class="mb-0">Заказы</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? importMessage;
+    private string? exportMessage;
+    private Exception? importError;
+    private Exception? exportError;
+    private int categoriesCount;
+    private int productsCount;
+    private int ordersCount;
+    private byte[]? exportedData;
+    private string? fileName;
+    private bool isImporting = false;
+    private bool isExporting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshCounts();
+    }
+
+    private async Task OnImportFileSelected(InputFileChangeEventArgs e)
+    {
+        importMessage = null;
+        importError = null;
+        isImporting = true;
+        StateHasChanged();
+
+        var file = e.File;
+        if (file == null)
+        {
+            isImporting = false;
+            return;
+        }
+
+        string? tempPath = null;
+        try
+        {
+            // Создаем временный файл
+            tempPath = Path.Combine(Path.GetTempPath(), $"import_{Guid.NewGuid()}.xlsx");
+            await using (var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024))
+            await using (var fileStream = new FileStream(tempPath, FileMode.Create))
+            {
+                await stream.CopyToAsync(fileStream);
+            }
+
+            // Выполняем импорт
+            await ImportService.ImportFromExcelAsync(tempPath);
+
+            importMessage = $"Файл '{file.Name}' успешно импортирован!";
+            await RefreshCounts();
+        }
+        catch (Exception ex)
+        {
+            importError = ex;
+        }
+        finally
+        {
+            isImporting = false;
+            // Удаляем временный файл
+            if (tempPath != null && File.Exists(tempPath))
+            {
+                try { File.Delete(tempPath); } catch { }
+            }
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnExportClick()
+    {
+        exportMessage = null;
+        exportError = null;
+        exportedData = null;
+        fileName = null;
+        isExporting = true;
+        StateHasChanged();
+
+        try
+        {
+            exportedData = await ExportService.ExportToExcelAsync();
+            fileName = $"ProductCatalog_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx";
+            exportMessage = "Данные успешно экспортированы. Нажмите кнопку для скачивания.";
+        }
+        catch (Exception ex)
+        {
+            exportError = ex;
+        }
+        finally
+        {
+            isExporting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadFile()
+    {
+        if (exportedData != null && !string.IsNullOrEmpty(fileName))
+        {
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", exportedData);
+        }
+    }
+
+    private async Task RefreshCounts()
+    {
+        categoriesCount = await Context.Categories.CountAsync();
+        productsCount = await Context.Products.CountAsync();
+        ordersCount = await Context.Orders.CountAsync();
+    }
+}

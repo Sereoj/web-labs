@@ -1,0 +1,58 @@
+@page "/orders/delete/{OrderId:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Администратор")]
+@inject IOrderService OrderService
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Удалить заказ</h3>
+            
+            @if (order != null)
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Вы уверены, что хотите удалить этот заказ?</h5>
+                        <p class="card-text"><strong>Код заказа:</strong> @order.CodeOrder</p>
+                        <p class="card-text"><strong>Код товара:</strong> @order.CodeProduct</p>
+                        <p class="card-text"><strong>Название товара:</strong> @order.Product?.NameProduct</p>
+                        <p class="card-text"><strong>Количество:</strong> @order.Quantity</p>
+                        <p class="card-text"><strong>Дата заказа:</strong> @order.OrderDate.ToString("dd.MM.yyyy")</p>
+                        <p class="card-text"><strong>Общая стоимость:</strong> @order.TotalCost.ToString("C")</p>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-danger me-2" @onclick="DeleteOrder">Удалить</button>
+                            <a class="btn btn-secondary" href="/orders">Отмена</a>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p>Заказ не найден.</p>
+                <a class="btn btn-secondary" href="/orders">Назад к списку</a>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int OrderId { get; set; }
+    
+    private Order? order;
+
+    protected override async Task OnInitializedAsync()
+    {
+        order = await OrderService.GetWithProductByIdAsync(OrderId);
+    }
+
+    private async Task DeleteOrder()
+    {
+        if (order != null)
+        {
+            await OrderService.DeleteAsync(order.CodeOrder);
+            Navigation.NavigateTo("/orders");
+        }
+    }
+}

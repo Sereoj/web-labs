@@ -1,0 +1,54 @@
+@page "/categories/delete/{CategoryId:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Администратор")]
+@inject ICategoryService CategoryService
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Удалить категорию</h3>
+            
+            @if (category != null)
+            {
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Вы уверены, что хотите удалить эту категорию?</h5>
+                        <p class="card-text"><strong>Код категории:</strong> @category.CodeCategory</p>
+                        <p class="card-text"><strong>Название категории:</strong> @category.NameCategory</p>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-danger me-2" @onclick="DeleteCategory">Удалить</button>
+                            <a class="btn btn-secondary" href="/categories">Отмена</a>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p>Категория не найдена.</p>
+                <a class="btn btn-secondary" href="/categories">Назад к списку</a>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int CategoryId { get; set; }
+    
+    private Category? category;
+
+    protected override async Task OnInitializedAsync()
+    {
+        category = await CategoryService.GetByIdAsync(CategoryId);
+    }
+
+    private async Task DeleteCategory()
+    {
+        if (category != null)
+        {
+            await CategoryService.DeleteAsync(category.CodeCategory);
+            Navigation.NavigateTo("/categories");
+        }
+    }
+}

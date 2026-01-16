@@ -1,0 +1,277 @@
+@page "/account/profile"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
+@inject UserManager<ApplicationUser> UserManager
+@inject ICategoryService CategoryService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Редактирование профиля</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success" role="alert">
+                            @successMessage
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+
+                    @if (user == null)
+                    {
+                        <p>Загрузка...</p>
+                    }
+                    else
+                    {
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <strong>Email:</strong> @user.Email
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Дата регистрации:</strong> @user.RegistrationDate.ToString("dd.MM.yyyy HH:mm")
+                            </div>
+                        </div>
+
+                        <hr />
+                        <h5>Личные данные</h5>
+
+                        <EditForm Model="profileModel" OnValidSubmit="HandleUpdateProfile" FormName="profile">
+                            <DataAnnotationsValidator />
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="firstName" class="form-label">Имя *</label>
+                                    <InputText id="firstName" class="form-control" @bind-Value="profileModel.FirstName" />
+                                    <ValidationMessage For="@(() => profileModel.FirstName)" class="text-danger" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="lastName" class="form-label">Фамилия *</label>
+                                    <InputText id="lastName" class="form-control" @bind-Value="profileModel.LastName" />
+                                    <ValidationMessage For="@(() => profileModel.LastName)" class="text-danger" />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="birthDate" class="form-label">Дата рождения</label>
+                                <InputDate id="birthDate" class="form-control" @bind-Value="profileModel.BirthDate" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="preferredCategory" class="form-label">Предпочтительная категория</label>
+                                <InputSelect id="preferredCategory" class="form-select" @bind-Value="profileModel.PreferredCategoryId">
+                                    <option value="">-- Не выбрано --</option>
+                                    @foreach (var category in categories)
+                                    {
+                                        <option value="@category.CodeCategory">@category.NameCategory</option>
+                                    }
+                                </InputSelect>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="about" class="form-label">О себе</label>
+                                <InputTextArea id="about" class="form-control" @bind-Value="profileModel.About" rows="3" />
+                                <ValidationMessage For="@(() => profileModel.About)" class="text-danger" />
+                            </div>
+
+                            <button type="submit" class="btn btn-primary me-2" disabled="@isLoading">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                Сохранить изменения
+                            </button>
+                            <a href="/" class="btn btn-secondary">Отмена</a>
+                        </EditForm>
+
+                        <hr />
+                        <h5>Изменение пароля</h5>
+
+                        <EditForm Model="passwordModel" OnValidSubmit="HandleChangePassword" FormName="password">
+                            <DataAnnotationsValidator />
+
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">Текущий пароль</label>
+                                <InputText id="currentPassword" type="password" class="form-control" @bind-Value="passwordModel.CurrentPassword" />
+                                <ValidationMessage For="@(() => passwordModel.CurrentPassword)" class="text-danger" />
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="newPassword" class="form-label">Новый пароль</label>
+                                    <InputText id="newPassword" type="password" class="form-control" @bind-Value="passwordModel.NewPassword" />
+                                    <ValidationMessage For="@(() => passwordModel.NewPassword)" class="text-danger" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirmNewPassword" class="form-label">Подтверждение пароля</label>
+                                    <InputText id="confirmNewPassword" type="password" class="form-control" @bind-Value="passwordModel.ConfirmNewPassword" />
+                                    <ValidationMessage For="@(() => passwordModel.ConfirmNewPassword)" class="text-danger" />
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-warning" disabled="@isChangingPassword">
+                                @if (isChangingPassword)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                }
+                                Изменить пароль
+                            </button>
+                        </EditForm>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private ApplicationUser? user;
+    private ProfileModel profileModel = new();
+    private PasswordModel passwordModel = new();
+    private IEnumerable<Category> categories = new List<Category>();
+    private string? successMessage;
+    private string? errorMessage;
+    private bool isLoading;
+    private bool isChangingPassword;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = await CategoryService.GetAllAsync();
+        
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userPrincipal = authState.User;
+
+        if (userPrincipal.Identity?.IsAuthenticated == true)
+        {
+            user = await UserManager.GetUserAsync(userPrincipal);
+            
+            if (user != null)
+            {
+                profileModel = new ProfileModel
+                {
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    BirthDate = user.BirthDate,
+                    PreferredCategoryId = user.PreferredCategoryId,
+                    About = user.About
+                };
+            }
+        }
+    }
+
+    private async Task HandleUpdateProfile()
+    {
+        if (user == null) return;
+
+        isLoading = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            user.FirstName = profileModel.FirstName;
+            user.LastName = profileModel.LastName;
+            user.BirthDate = profileModel.BirthDate;
+            user.PreferredCategoryId = profileModel.PreferredCategoryId;
+            user.About = profileModel.About;
+
+            var result = await UserManager.UpdateAsync(user);
+
+            if (result.Succeeded)
+            {
+                successMessage = "Профиль успешно обновлён!";
+            }
+            else
+            {
+                errorMessage = string.Join(". ", result.Errors.Select(e => e.Description));
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ошибка обновления профиля: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleChangePassword()
+    {
+        if (user == null) return;
+
+        isChangingPassword = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            var result = await UserManager.ChangePasswordAsync(user, passwordModel.CurrentPassword, passwordModel.NewPassword);
+
+            if (result.Succeeded)
+            {
+                successMessage = "Пароль успешно изменён!";
+                passwordModel = new PasswordModel();
+            }
+            else
+            {
+                errorMessage = string.Join(". ", result.Errors.Select(e => e.Description));
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ошибка изменения пароля: {ex.Message}";
+        }
+        finally
+        {
+            isChangingPassword = false;
+        }
+    }
+
+    public class ProfileModel
+    {
+        [Required(ErrorMessage = "Имя обязательно")]
+        [StringLength(100, ErrorMessage = "Имя не может превышать 100 символов")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Фамилия обязательна")]
+        [StringLength(100, ErrorMessage = "Фамилия не может превышать 100 символов")]
+        public string LastName { get; set; } = string.Empty;
+
+        public DateTime? BirthDate { get; set; }
+
+        public int? PreferredCategoryId { get; set; }
+
+        [StringLength(500, ErrorMessage = "Поле 'О себе' не может превышать 500 символов")]
+        public string? About { get; set; }
+    }
+
+    public class PasswordModel
+    {
+        [Required(ErrorMessage = "Текущий пароль обязателен")]
+        [DataType(DataType.Password)]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Новый пароль обязателен")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Пароль должен содержать минимум 8 символов")]
+        [DataType(DataType.Password)]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Подтверждение пароля обязательно")]
+        [Compare("NewPassword", ErrorMessage = "Пароли не совпадают")]
+        [DataType(DataType.Password)]
+        public string ConfirmNewPassword { get; set; } = string.Empty;
+    }
+}

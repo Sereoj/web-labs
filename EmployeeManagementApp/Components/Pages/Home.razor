@@ -1,0 +1,65 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.Routing
+
+<PageTitle>Главная</PageTitle>
+
+<div class="welcome-container">
+    <h1>Система управления сотрудниками</h1>
+    <p>Управление распределением сотрудников по отделам: программисты, аналитики, дизайнеры</p>
+
+    <div class="action-buttons">
+        <NavLink href="/employeemanagement" class="btn btn-primary">
+            Управление сотрудниками
+        </NavLink>
+        <NavLink href="/employees" class="btn btn-secondary">
+            Добавить нового сотрудника
+        </NavLink>
+    </div>
+</div>
+
+<style>
+    .welcome-container {
+        text-align: center;
+        padding: 40px 20px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .action-buttons {
+        margin-top: 30px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        text-align: center;
+        min-width: 250px;
+    }
+
+    .btn:visited {
+        color: inherit;
+    }
+
+    .btn-primary {
+        background-color: #007bff;
+        color: white;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+    }
+
+    .btn:hover {
+        opacity: 0.8;
+    }
+</style>
+

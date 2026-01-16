@@ -1,0 +1,172 @@
+/* Стили для всего приложения */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1, h2, h3 {
+    color: #2c3e50;
+}
+
+.navbar {
+    background-color: #34495e !important;
+    padding: 15px 0;
+}
+
+.navbar-brand {
+    font-weight: bold;
+    color: #ecf0f1 !important;
+}
+
+.navbar-brand:hover {
+    color: #bdc3c7 !important;
+}
+
+.nav-link {
+    color: #ecf0f1 !important;
+    margin-right: 15px;
+}
+
+.nav-link:hover {
+    color: #bdc3c7 !important;
+}
+
+.products-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+    padding: 10px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.product-item {
+    border: 1px solid #ddd;
+    padding: 15px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.3s ease;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.product-item:hover {
+    background-color: #e8f4fd;
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    border-color: #3498db;
+}
+
+.order-table {
+    width: 100%;
+    margin-bottom: 20px;
+    background-color: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.table th {
+    background-color: #34495e;
+    color: white;
+    border: none;
+}
+
+.table td {
+    vertical-align: middle;
+    border-top: 1px solid #dee2e6;
+}
+
+.total-amount {
+    text-align: right;
+    font-size: 1.3em;
+    font-weight: bold;
+    padding: 15px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-top: 10px;
+}
+
+.total-amount h3 {
+    margin: 0;
+    color: #27ae60;
+}
+
+.quantity-input {
+    display: inline-block;
+    width: 80px;
+    text-align: center;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.btn {
+    border-radius: 4px;
+    padding: 8px 15px;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background-color: #3498db;
+    border-color: #3498db;
+}
+
+.btn-primary:hover {
+    background-color: #2980b9;
+    border-color: #2980b9;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+    border-color: #e74c3c;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+    border-color: #c0392b;
+}
+
+.btn-warning {
+    background-color: #f39c12;
+    border-color: #f39c12;
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: #d35400;
+    border-color: #d35400;
+}
+
+.footer {
+    background-color: #34495e;
+    color: #ecf0f1;
+    padding: 15px 0;
+    text-align: center;
+    margin-top: 30px;
+}
+
+.form-control {
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.card {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-bottom: 20px;
+}

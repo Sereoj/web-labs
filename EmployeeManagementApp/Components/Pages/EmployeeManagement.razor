@@ -1,0 +1,481 @@
+@page "/employeemanagement"
+@rendermode InteractiveServer
+@using EmployeeManagementApp.Models
+@using EmployeeManagementApp.Services
+@inject IEmployeeService EmployeeService
+@inject IJSRuntime JSRuntime
+
+<div class="container">
+    <h2>Управление сотрудниками</h2>
+    
+    <!-- Top section: List of all employees -->
+    <div class="top-section">
+        <h3>Список всех сотрудников</h3>
+        <table class="employees-table">
+            <thead>
+                <tr>
+                    <th>Имя</th>
+                    <th>Email</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (allEmployees.Any(e => e.CurrentPosition == Position.None))
+                {
+                    @foreach (var employee in allEmployees.Where(e => e.CurrentPosition == Position.None))
+                    {
+                        <tr class="employee-row" 
+                            draggable="true"
+                            data-employee-id="@employee.Id"
+                            @ondragstart="(e) => OnDragStart(e, employee.Id)"
+                            @onclick="() => ShowPositionMenu(employee)">
+                            <td>@employee.Name</td>
+                            <td>@employee.Email</td>
+                            <td>
+                                <button class="btn-small" type="button" title="Назначить программистом" @onclick="() => MoveEmployeeToPosition(employee, Position.Programmer)" @onclick:stopPropagation="true">П</button>
+                                <button class="btn-small" type="button" title="Назначить аналитиком" @onclick="() => MoveEmployeeToPosition(employee, Position.Analyst)" @onclick:stopPropagation="true">А</button>
+                                <button class="btn-small" type="button" title="Назначить дизайнером" @onclick="() => MoveEmployeeToPosition(employee, Position.Designer)" @onclick:stopPropagation="true">Д</button>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="3" style="text-align: center; padding: 20px;">Нет доступных сотрудников</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Bottom section: Table with three columns -->
+    <div class="bottom-section">
+        <h3>Распределение по отделам</h3>
+        <table class="positions-table">
+            <thead>
+                <tr>
+                    <th class="col-programmer">Программист</th>
+                    <th class="col-analyst">Аналитик</th>
+                    <th class="col-designer">Дизайнер</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="drop-zone" 
+                        data-position="Programmer"
+                        @ondrop="(e) => OnDrop(e, Position.Programmer)"
+                        @ondragover="OnDragOver"
+                        @ondragover:preventDefault="true"
+                        @ondragleave="OnDragLeave">
+                        @foreach (var employee in programmers)
+                        {
+                            <div class="employee-item" 
+                                 draggable="true"
+                                 data-employee-id="@employee.Id"
+                                 @ondragstart="(e) => OnDragStart(e, employee.Id)"
+                                 @ondblclick="() => MoveEmployeeToAvailable(employee)">
+                                <span>@employee.Name</span>
+                                <button class="btn-remove" type="button" title="Снять с должности" @onclick="() => RemoveFromPosition(employee.Id)" @onclick:stopPropagation="true">×</button>
+                            </div>
+                        }
+                        @if (!programmers.Any())
+                        {
+                            <div style="color: #999; padding: 10px; text-align: center;">Пусто</div>
+                        }
+                    </td>
+                    <td class="drop-zone"
+                        data-position="Analyst"
+                        @ondrop="(e) => OnDrop(e, Position.Analyst)"
+                        @ondragover="OnDragOver"
+                        @ondragover:preventDefault="true"
+                        @ondragleave="OnDragLeave">
+                        @foreach (var employee in analysts)
+                        {
+                            <div class="employee-item" 
+                                 draggable="true"
+                                 data-employee-id="@employee.Id"
+                                 @ondragstart="(e) => OnDragStart(e, employee.Id)"
+                                 @ondblclick="() => MoveEmployeeToAvailable(employee)">
+                                <span>@employee.Name</span>
+                                <button class="btn-remove" type="button" title="Снять с должности" @onclick="() => RemoveFromPosition(employee.Id)" @onclick:stopPropagation="true">×</button>
+                            </div>
+                        }
+                        @if (!analysts.Any())
+                        {
+                            <div style="color: #999; padding: 10px; text-align: center;">Пусто</div>
+                        }
+                    </td>
+                    <td class="drop-zone"
+                        data-position="Designer"
+                        @ondrop="(e) => OnDrop(e, Position.Designer)"
+                        @ondragover="OnDragOver"
+                        @ondragover:preventDefault="true"
+                        @ondragleave="OnDragLeave">
+                        @foreach (var employee in designers)
+                        {
+                            <div class="employee-item" 
+                                 draggable="true"
+                                 data-employee-id="@employee.Id"
+                                 @ondragstart="(e) => OnDragStart(e, employee.Id)"
+                                 @ondblclick="() => MoveEmployeeToAvailable(employee)">
+                                <span>@employee.Name</span>
+                                <button class="btn-remove" type="button" title="Снять с должности" @onclick="() => RemoveFromPosition(employee.Id)" @onclick:stopPropagation="true">×</button>
+                            </div>
+                        }
+                        @if (!designers.Any())
+                        {
+                            <div style="color: #999; padding: 10px; text-align: center;">Пусто</div>
+                        }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div style="padding: 10px; background-color: #f0f0f0; margin-top: 20px; font-size: 12px;">
+    <strong>Отладка:</strong><br/>
+    Всего сотрудников: @allEmployees.Count<br/>
+    Без назначения: @allEmployees.Count(e => e.CurrentPosition == Position.None)<br/>
+    Программистов: @programmers.Count<br/>
+    Аналитиков: @analysts.Count<br/>
+    Дизайнеров: @designers.Count<br/>
+    DraggedEmployeeId: @draggedEmployeeId<br/>
+    ShowMenu: @showMenu
+</div>
+
+@if (showMenu)
+{
+    <div class="menu-overlay" @onclick="CloseMenu">
+        <div class="menu-box" @onclick:stopPropagation="true">
+            <h4>Выберите отдел для @selectedEmployee?.Name</h4>
+            <button class="menu-btn" @onclick="() => SelectPosition(Position.Programmer)">Программист</button>
+            <button class="menu-btn" @onclick="() => SelectPosition(Position.Analyst)">Аналитик</button>
+            <button class="menu-btn" @onclick="() => SelectPosition(Position.Designer)">Дизайнер</button>
+            <button class="menu-btn-cancel" @onclick="CloseMenu">Отмена</button>
+        </div>
+    </div>
+}
+
+<style>
+    .container {
+        padding: 20px;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    h2 {
+        margin-bottom: 20px;
+    }
+
+    h3 {
+        margin-bottom: 10px;
+        font-size: 18px;
+    }
+
+    .top-section {
+        margin-bottom: 30px;
+    }
+
+    .bottom-section {
+        margin-top: 30px;
+    }
+
+    .employees-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #ccc;
+    }
+
+    .employees-table th {
+        background-color: #f0f0f0;
+        padding: 10px;
+        text-align: left;
+        border: 1px solid #ccc;
+    }
+
+    .employees-table td {
+        padding: 8px;
+        border: 1px solid #ccc;
+    }
+
+    .employee-row {
+        cursor: pointer;
+    }
+
+    .employee-row:hover {
+        background-color: #f5f5f5;
+    }
+
+    .employee-row.dragging {
+        opacity: 0.5;
+    }
+
+    .positions-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #ccc;
+    }
+
+    .positions-table th {
+        background-color: #f0f0f0;
+        padding: 10px;
+        text-align: center;
+        border: 1px solid #ccc;
+    }
+
+    .positions-table td {
+        padding: 10px;
+        border: 1px solid #ccc;
+        vertical-align: top;
+        min-height: 200px;
+    }
+
+    .drop-zone {
+        min-height: 200px;
+    }
+
+    .drop-zone.drag-over {
+        background-color: #e0f0ff;
+    }
+
+    .employee-item {
+        padding: 5px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        background-color: #fff;
+        cursor: move;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .employee-item:hover {
+        background-color: #f9f9f9;
+    }
+
+    .employee-item.dragging {
+        opacity: 0.5;
+    }
+
+    .btn-small {
+        padding: 3px 8px;
+        margin: 0 2px;
+        border: 1px solid #999;
+        background-color: #fff;
+        cursor: pointer;
+    }
+
+    .btn-small:hover {
+        background-color: #e0e0e0;
+    }
+
+    .btn-remove {
+        padding: 2px 6px;
+        border: 1px solid #999;
+        background-color: #ffcccc;
+        cursor: pointer;
+        font-size: 16px;
+        line-height: 1;
+    }
+
+    .btn-remove:hover {
+        background-color: #ff9999;
+    }
+
+    .menu-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .menu-box {
+        background-color: white;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        min-width: 250px;
+    }
+
+    .menu-box h4 {
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+
+    .menu-btn {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        border: 1px solid #999;
+        background-color: #fff;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .menu-btn:hover {
+        background-color: #f0f0f0;
+    }
+
+    .menu-btn-cancel {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        border: 1px solid #999;
+        background-color: #f5f5f5;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .menu-btn-cancel:hover {
+        background-color: #e0e0e0;
+    }
+</style>
+
+@code {
+    private List<Employee> allEmployees = new();
+    private List<Employee> programmers = new();
+    private List<Employee> analysts = new();
+    private List<Employee> designers = new();
+    private bool showMenu = false;
+    private Employee? selectedEmployee = null;
+    private int draggedEmployeeId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEmployees();
+    }
+
+    private async Task LoadEmployees()
+    {
+        Console.WriteLine("[DEBUG] LoadEmployees: Starting");
+        try
+        {
+            allEmployees = await EmployeeService.GetAllEmployeesAsync();
+            Console.WriteLine($"[DEBUG] LoadEmployees: Total employees={allEmployees.Count}");
+            programmers = await EmployeeService.GetEmployeesByPositionAsync(Position.Programmer);
+            analysts = await EmployeeService.GetEmployeesByPositionAsync(Position.Analyst);
+            designers = await EmployeeService.GetEmployeesByPositionAsync(Position.Designer);
+            Console.WriteLine($"[DEBUG] LoadEmployees: Programmers={programmers.Count}, Analysts={analysts.Count}, Designers={designers.Count}");
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG] LoadEmployees ERROR: {ex.Message}");
+        }
+    }
+
+    private void OnDragStart(DragEventArgs e, int employeeId)
+    {
+        Console.WriteLine($"[DEBUG] OnDragStart: employeeId={employeeId}");
+        draggedEmployeeId = employeeId;
+        e.DataTransfer.EffectAllowed = "move";
+        // Employee ID is stored in JavaScript window.draggedEmployeeId
+    }
+
+    private async Task OnDrop(DragEventArgs e, Position position)
+    {
+        Console.WriteLine($"[DEBUG] OnDrop: draggedEmployeeId={draggedEmployeeId}, position={position}");
+        
+        if (draggedEmployeeId > 0)
+        {
+            var employee = allEmployees.FirstOrDefault(emp => emp.Id == draggedEmployeeId);
+            Console.WriteLine($"[DEBUG] OnDrop: employee found={employee != null}, name={employee?.Name}");
+            if (employee != null)
+            {
+                employee.CurrentPosition = position;
+                await EmployeeService.UpdateEmployeeAsync(employee);
+                Console.WriteLine($"[DEBUG] OnDrop: Employee updated successfully, new position={position}");
+                await LoadEmployees();
+            }
+        }
+        else
+        {
+            Console.WriteLine($"[DEBUG] OnDrop: draggedEmployeeId is 0 or invalid");
+        }
+        
+        draggedEmployeeId = 0;
+    }
+
+    private void OnDragOver(DragEventArgs e)
+    {
+        Console.WriteLine("[DEBUG] OnDragOver called");
+        // PreventDefault is handled by JavaScript
+    }
+
+    private void OnDragLeave(DragEventArgs e)
+    {
+        // Remove hover effect handled by CSS
+    }
+
+    private async Task MoveEmployeeToAvailable(Employee employee)
+    {
+        Console.WriteLine($"[DEBUG] MoveEmployeeToAvailable: employee={employee.Name}");
+        employee.CurrentPosition = Position.None;
+        await EmployeeService.UpdateEmployeeAsync(employee);
+        await LoadEmployees();
+    }
+
+    private async Task MoveEmployeeToPosition(Employee employee, Position position)
+    {
+        Console.WriteLine($"[DEBUG] MoveEmployeeToPosition: employee={employee.Name}, position={position}");
+        try
+        {
+            employee.CurrentPosition = position;
+            await EmployeeService.UpdateEmployeeAsync(employee);
+            Console.WriteLine($"[DEBUG] MoveEmployeeToPosition: Success");
+            await LoadEmployees();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG] MoveEmployeeToPosition ERROR: {ex.Message}");
+        }
+    }
+
+    private async Task RemoveFromPosition(int employeeId)
+    {
+        Console.WriteLine($"[DEBUG] RemoveFromPosition: employeeId={employeeId}");
+        var employee = allEmployees.FirstOrDefault(e => e.Id == employeeId);
+        Console.WriteLine($"[DEBUG] RemoveFromPosition: employee found={employee != null}");
+        if (employee != null)
+        {
+            employee.CurrentPosition = Position.None;
+            await EmployeeService.UpdateEmployeeAsync(employee);
+            Console.WriteLine($"[DEBUG] RemoveFromPosition: Success");
+            await LoadEmployees();
+        }
+    }
+
+    private void ShowPositionMenu(Employee employee)
+    {
+        Console.WriteLine($"[DEBUG] ShowPositionMenu: employee={employee.Name}");
+        selectedEmployee = employee;
+        showMenu = true;
+        StateHasChanged();
+    }
+
+    private async Task SelectPosition(Position position)
+    {
+        if (selectedEmployee != null)
+        {
+            await MoveEmployeeToPosition(selectedEmployee, position);
+        }
+        CloseMenu();
+    }
+
+    private void CloseMenu()
+    {
+        showMenu = false;
+        selectedEmployee = null;
+        StateHasChanged();
+    }
+}

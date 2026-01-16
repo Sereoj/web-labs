@@ -1,0 +1,39 @@
+@page "/categories/create"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Администратор")]
+@inject ICategoryService CategoryService
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Создать категорию</h3>
+            
+            <EditForm Model="category" OnValidSubmit="SaveCategory">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="form-group mb-3">
+                    <label for="nameCategory" class="form-label">Название категории:</label>
+                    <InputText id="nameCategory" class="form-control" @bind-Value="category.NameCategory" />
+                    <ValidationMessage For="@(() => category.NameCategory)" class="text-danger" />
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-success me-2">Сохранить</button>
+                    <a class="btn btn-secondary" href="/categories">Отмена</a>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private Category category = new();
+
+    private async Task SaveCategory()
+    {
+        await CategoryService.CreateAsync(category);
+        Navigation.NavigateTo("/categories");
+    }
+}

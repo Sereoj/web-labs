@@ -1,0 +1,184 @@
+@page "/account/register"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Identity
+@using System.ComponentModel.DataAnnotations
+@inject UserManager<ApplicationUser> UserManager
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ICategoryService CategoryService
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Регистрация</h4>
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger" role="alert">
+                            @errorMessage
+                        </div>
+                    }
+
+                    <EditForm Model="registerModel" OnValidSubmit="HandleRegister" FormName="register">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="firstName" class="form-label">Имя *</label>
+                                <InputText id="firstName" class="form-control" @bind-Value="registerModel.FirstName" />
+                                <ValidationMessage For="@(() => registerModel.FirstName)" class="text-danger" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="lastName" class="form-label">Фамилия *</label>
+                                <InputText id="lastName" class="form-control" @bind-Value="registerModel.LastName" />
+                                <ValidationMessage For="@(() => registerModel.LastName)" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email *</label>
+                            <InputText id="email" class="form-control" @bind-Value="registerModel.Email" />
+                            <ValidationMessage For="@(() => registerModel.Email)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="birthDate" class="form-label">Дата рождения</label>
+                            <InputDate id="birthDate" class="form-control" @bind-Value="registerModel.BirthDate" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="preferredCategory" class="form-label">Предпочтительная категория</label>
+                            <InputSelect id="preferredCategory" class="form-select" @bind-Value="registerModel.PreferredCategoryId">
+                                <option value="">-- Выберите категорию --</option>
+                                @foreach (var category in categories)
+                                {
+                                    <option value="@category.CodeCategory">@category.NameCategory</option>
+                                }
+                            </InputSelect>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="about" class="form-label">О себе</label>
+                            <InputTextArea id="about" class="form-control" @bind-Value="registerModel.About" rows="3" />
+                            <ValidationMessage For="@(() => registerModel.About)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Пароль *</label>
+                            <InputText id="password" type="password" class="form-control" @bind-Value="registerModel.Password" />
+                            <ValidationMessage For="@(() => registerModel.Password)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Подтверждение пароля *</label>
+                            <InputText id="confirmPassword" type="password" class="form-control" @bind-Value="registerModel.ConfirmPassword" />
+                            <ValidationMessage For="@(() => registerModel.ConfirmPassword)" class="text-danger" />
+                        </div>
+
+                        <button type="submit" class="btn btn-success" disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                            }
+                            Зарегистрироваться
+                        </button>
+                    </EditForm>
+
+                    <hr />
+                    <p class="mb-0">Уже есть аккаунт? <a href="/account/login">Войти</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterModel registerModel = new();
+    private IEnumerable<Category> categories = new List<Category>();
+    private string? errorMessage;
+    private bool isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = await CategoryService.GetAllAsync();
+    }
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var user = new ApplicationUser
+            {
+                UserName = registerModel.Email,
+                Email = registerModel.Email,
+                FirstName = registerModel.FirstName,
+                LastName = registerModel.LastName,
+                BirthDate = registerModel.BirthDate,
+                PreferredCategoryId = registerModel.PreferredCategoryId,
+                About = registerModel.About,
+                RegistrationDate = DateTime.UtcNow,
+                EmailConfirmed = true
+            };
+
+            var result = await UserManager.CreateAsync(user, registerModel.Password);
+
+            if (result.Succeeded)
+            {
+                await UserManager.AddToRoleAsync(user, IdentityDataInitializer.Roles.User);
+                await SignInManager.SignInAsync(user, isPersistent: false);
+                Navigation.NavigateTo("/", forceLoad: true);
+            }
+            else
+            {
+                errorMessage = string.Join(". ", result.Errors.Select(e => e.Description));
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ошибка регистрации: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public class RegisterModel
+    {
+        [Required(ErrorMessage = "Имя обязательно")]
+        [StringLength(100, ErrorMessage = "Имя не может превышать 100 символов")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Фамилия обязательна")]
+        [StringLength(100, ErrorMessage = "Фамилия не может превышать 100 символов")]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Email обязателен")]
+        [EmailAddress(ErrorMessage = "Некорректный формат email")]
+        public string Email { get; set; } = string.Empty;
+
+        public DateTime? BirthDate { get; set; }
+
+        public int? PreferredCategoryId { get; set; }
+
+        [StringLength(500, ErrorMessage = "Поле 'О себе' не может превышать 500 символов")]
+        public string? About { get; set; }
+
+        [Required(ErrorMessage = "Пароль обязателен")]
+        [StringLength(100, MinimumLength = 8, ErrorMessage = "Пароль должен содержать минимум 8 символов")]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Подтверждение пароля обязательно")]
+        [Compare("Password", ErrorMessage = "Пароли не совпадают")]
+        [DataType(DataType.Password)]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,95 @@
+@page "/products/edit/{ProductId:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = "Администратор")]
+@inject IProductService ProductService
+@inject ICategoryService CategoryService
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>Редактировать товар</h3>
+            
+            @if (isLoading)
+            {
+                <p>Загрузка...</p>
+            }
+            else if (product == null)
+            {
+                <p>Товар не найден.</p>
+                <a class="btn btn-secondary" href="/products">Назад к списку</a>
+            }
+            else
+            {
+                <EditForm Model="product" OnValidSubmit="SaveProduct">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="form-group mb-3">
+                        <label for="codeProduct" class="form-label">Код товара:</label>
+                        <InputNumber id="codeProduct" class="form-control" @bind-Value="product.CodeProduct" disabled="true" />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="nameProduct" class="form-label">Название товара:</label>
+                        <InputText id="nameProduct" class="form-control" @bind-Value="product.NameProduct" />
+                        <ValidationMessage For="@(() => product.NameProduct)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="descriptionProduct" class="form-label">Описание товара:</label>
+                        <InputTextArea id="descriptionProduct" class="form-control" @bind-Value="product.DescriptionProduct" rows="3" />
+                        <ValidationMessage For="@(() => product.DescriptionProduct)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="price" class="form-label">Цена:</label>
+                        <InputNumber id="price" class="form-control" @bind-Value="product.Price" />
+                        <ValidationMessage For="@(() => product.Price)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label for="codeCategory" class="form-label">Категория:</label>
+                        <InputSelect id="codeCategory" class="form-select" @bind-Value="product.CodeCategory">
+                            <option value="0">-- Выберите категорию --</option>
+                            @foreach (var category in categories)
+                            {
+                                <option value="@category.CodeCategory">@category.NameCategory</option>
+                            }
+                        </InputSelect>
+                        <ValidationMessage For="@(() => product.CodeCategory)" class="text-danger" />
+                    </div>
+
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-success me-2">Сохранить</button>
+                        <a class="btn btn-secondary" href="/products">Отмена</a>
+                    </div>
+                </EditForm>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int ProductId { get; set; }
+    
+    private Product? product;
+    private IEnumerable<Category> categories = new List<Category>();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        product = await ProductService.GetByIdAsync(ProductId);
+        categories = await CategoryService.GetAllAsync();
+        isLoading = false;
+    }
+
+    private async Task SaveProduct()
+    {
+        if (product != null)
+        {
+            await ProductService.UpdateAsync(product);
+            Navigation.NavigateTo("/products");
+        }
+    }
+}

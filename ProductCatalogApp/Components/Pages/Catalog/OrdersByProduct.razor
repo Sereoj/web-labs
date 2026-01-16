@@ -1,0 +1,71 @@
+@page "/orders/product/{ProductId:int}"
+@rendermode InteractiveServer
+@using ProductCatalogApp.Models
+@using ProductCatalogApp.Services
+@inject IOrderService OrderService
+@inject IProductService ProductService
+@inject NavigationManager Navigation
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Заказы для товара "@productName"</h2>
+            <p>
+                <a class="btn btn-primary" href="/orders/create?productId=@ProductId">Создать новый заказ</a>
+                <a class="btn btn-secondary ms-2" href="/products">Назад к товарам</a>
+            </p>
+            
+            <table class="table table-striped table-bordered">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Код заказа</th>
+                        <th>Код товара</th>
+                        <th>Количество</th>
+                        <th>Дата заказа</th>
+                        <th>Общая стоимость</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var order in orders)
+                    {
+                        <tr>
+                            <td>@order.CodeOrder</td>
+                            <td>@order.CodeProduct</td>
+                            <td>@order.Quantity</td>
+                            <td>@order.OrderDate.ToString("dd.MM.yyyy")</td>
+                            <td>@order.TotalCost.ToString("C")</td>
+                            <td>
+                                <a class="btn btn-sm btn-outline-primary" href="/orders/edit/@order.CodeOrder">Изменить</a>
+                                <a class="btn btn-sm btn-outline-info" href="/orders/details/@order.CodeOrder">Детали</a>
+                                <a class="btn btn-sm btn-outline-danger" href="/orders/delete/@order.CodeOrder">Удалить</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int ProductId { get; set; }
+    
+    private IEnumerable<Order> orders = new List<Order>();
+    private string productName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        orders = await OrderService.GetByProductAsync(ProductId);
+        
+        var product = await ProductService.GetByIdAsync(ProductId);
+        if (product != null)
+        {
+            productName = product.NameProduct;
+        }
+        else
+        {
+            Navigation.NavigateTo("/products");
+        }
+    }
+}
